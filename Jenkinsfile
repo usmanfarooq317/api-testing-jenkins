@@ -31,7 +31,7 @@ pipeline {
                         def numbers = existingTags.readLines().collect { it.replace('v', '').toInteger() }
                         env.NEW_VERSION = "v" + (numbers.max() + 1)
                     }
-                    echo "✅ New version to build: ${env.NEW_VERSION}"
+                    echo "✅ New Version to build: ${env.NEW_VERSION}"
                 }
             }
         }
