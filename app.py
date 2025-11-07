@@ -3,13 +3,22 @@ from flask import Flask, request, jsonify, render_template_string
 import os
 import time
 import uuid
+from datetime import datetime
 
 app = Flask(__name__)
+
+# Log file path (shared for Jenkins + API)
+LOG_FILE = "test_results.txt"
+
+def write_log(entry: str):
+    """Append logs to test_results.txt with timestamps."""
+    timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+    with open(LOG_FILE, "a") as f:
+        f.write(f"{timestamp} {entry}\n")
 
 # Simple in-memory "log" for demo
 REQUEST_LOG = []
 
-# HTML frontend (simple single page served by Flask)
 INDEX_HTML = """
 <!doctype html>
 <html>
@@ -68,8 +77,6 @@ async function callApi() {
 """.replace("{{rid}}", str(uuid.uuid4())[:8])
 
 
-# --- Backend endpoints ---
-
 @app.route("/")
 def index():
     return render_template_string(INDEX_HTML)
@@ -82,29 +89,20 @@ def health():
 
 @app.route("/logs")
 def logs():
-    # return last 20 requests
     return jsonify(REQUEST_LOG[-20:]), 200
 
 
 @app.route("/api/secure", methods=["POST"])
 def api_secure():
-    """
-    Secure endpoint that requires:
-     - header: X-Api-Key (must equal SECRET_API_KEY)
-     - header: X-Request-Id (non-empty)
-     - body: JSON with "name" string (min 2 chars)
-    Returns JSON with greeting and server info.
-    """
     SECRET_API_KEY = os.environ.get("SECRET_API_KEY", "secret-key-123")
 
     headers = request.headers
     x_api_key = headers.get("X-Api-Key")
     x_req_id = headers.get("X-Request-Id")
-    body = None
+
     try:
         body = request.get_json(force=True)
     except Exception:
-        # bad json
         body = None
 
     record = {
@@ -117,46 +115,48 @@ def api_secure():
         },
         "body": body
     }
-
-    # Store a short record
     REQUEST_LOG.append(record)
 
-    # Validate headers
     if not x_api_key:
+        write_log(f"ERROR Missing X-Api-Key from {request.remote_addr}")
         return jsonify({"error": "Missing header X-Api-Key"}), 400
     if x_api_key != SECRET_API_KEY:
+        write_log(f"ERROR Invalid X-Api-Key from {request.remote_addr}")
         return jsonify({"error": "Invalid API key"}), 401
     if not x_req_id:
+        write_log(f"ERROR Missing X-Request-Id from {request.remote_addr}")
         return jsonify({"error": "Missing header X-Request-Id"}), 400
-
-    # Validate body
     if not body or not isinstance(body, dict):
+        write_log(f"ERROR Invalid JSON body from {request.remote_addr}")
         return jsonify({"error": "Invalid or missing JSON body"}), 400
+
     name = body.get("name")
-    if not name or not isinstance(name, str) or len(name.strip()) < 2:
+    if not name or len(name.strip()) < 2:
+        write_log(f"ERROR Invalid name field from {request.remote_addr}")
         return jsonify({"error": "Invalid 'name' field; must be string length >= 2"}), 400
 
-    # Success
     resp = {
         "message": f"Hello, {name.strip()}!",
         "request_id": x_req_id,
         "server_time": int(time.time())
     }
+
+    write_log(f"SUCCESS API call by {name.strip()} with req_id={x_req_id}")
     return jsonify(resp), 200
 
 
-# Small echo endpoint used for more tests
 @app.route("/api/echo", methods=["GET", "POST"])
 def echo():
-    return jsonify({
+    data = {
         "method": request.method,
         "headers": dict(request.headers),
         "args": request.args,
         "body": request.get_json(silent=True)
-    }), 200
+    }
+    write_log(f"ECHO endpoint called from {request.remote_addr}")
+    return jsonify(data), 200
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5090))
-    # run with 0.0.0.0 so container exposes it
     app.run(host="0.0.0.0", port=port)

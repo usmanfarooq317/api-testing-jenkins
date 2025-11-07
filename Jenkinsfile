@@ -71,14 +71,22 @@ curl -s https://hub.docker.com/v2/repositories/${DOCKER_USER}/${IMAGE_NAME}/tags
         }
 
         stage('Run API Tests (curl variants)') {
-            steps {
-                // run the test script on the agent (tests prints outputs)
-                sh "chmod +x tests/run_tests.sh || true"
-                sh "tests/run_tests.sh | tee api-tests-output.txt"
-                // archive the file for later inspection
-                archiveArtifacts artifacts: 'api-tests-output.txt', fingerprint: true
-            }
+    steps {
+        script {
+            sh "chmod +x tests/run_tests.sh || true"
+            // run tests and append to the shared log file in the container
+            sh """
+              echo '--- Running Jenkins API Tests ---' >> test_results.txt
+              tests/run_tests.sh | tee -a test_results.txt
+              echo '--- Tests Completed ---' >> test_results.txt
+            """
+            // archive the combined results
+            archiveArtifacts artifacts: 'test_results.txt', fingerprint: true
         }
+    }
+}
+
+
 
         stage('Tag & Push to Docker Hub') {
             steps {
