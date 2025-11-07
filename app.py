@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, send_file, Response
 import os
 import time
 import uuid
@@ -7,8 +7,9 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Log file path (shared for Jenkins + API)
 LOG_FILE = "test_results.txt"
+REQUEST_LOG = []
+
 
 def write_log(entry: str):
     """Append logs to test_results.txt with timestamps."""
@@ -16,8 +17,6 @@ def write_log(entry: str):
     with open(LOG_FILE, "a") as f:
         f.write(f"{timestamp} {entry}\n")
 
-# Simple in-memory "log" for demo
-REQUEST_LOG = []
 
 INDEX_HTML = """
 <!doctype html>
@@ -29,14 +28,18 @@ INDEX_HTML = """
     body { font-family: Arial, sans-serif; margin: 32px; }
     .card { border:1px solid #ddd; padding:16px; margin-bottom:16px; border-radius:8px; }
     input, textarea { width: 100%; padding:8px; margin:8px 0; box-sizing:border-box; }
-    button { padding:8px 16px; }
+    button { padding:8px 16px; cursor:pointer; border:none; border-radius:5px; background:#007bff; color:white; }
+    button:hover { background:#0056b3; }
     pre { background:#f7f7f7; padding:12px; border-radius:6px; }
+    a.download { text-decoration:none; color:white; background:#28a745; padding:8px 14px; border-radius:5px; margin-left:10px; }
+    a.download:hover { background:#1e7e34; }
   </style>
 </head>
 <body>
   <h1>API Testing Jenkins (port 5090)</h1>
+
   <div class="card">
-    <h3>Call secure API</h3>
+    <h3>Call Secure API</h3>
     <label>X-Api-Key (required)</label>
     <input id="apikey" value="secret-key-123" />
     <label>X-Request-Id (required)</label>
@@ -51,7 +54,13 @@ INDEX_HTML = """
   <div class="card">
     <h3>Health & Logs</h3>
     <button onclick="fetch('/health').then(r=>r.text()).then(t=>alert(t))">Health check</button>
-    <button onclick="fetch('/logs').then(r=>r.json()).then(j=>document.getElementById('out').textContent = JSON.stringify(j, null, 2))">Show recent logs</button>
+    <button onclick="showLogs()">Show recent logs</button>
+    <a class="download" href="/logs/full?download=1" target="_blank">⬇ Download Full Log</a>
+  </div>
+
+  <div class="card">
+    <h3>Full Logs Preview</h3>
+    <pre id="fullLogs">Click "Show Logs" to view recent or use "Download Full Log"</pre>
   </div>
 
 <script>
@@ -70,6 +79,12 @@ async function callApi() {
   });
   const text = await resp.text();
   document.getElementById('out').textContent = 'HTTP ' + resp.status + '\\n' + text;
+}
+
+async function showLogs() {
+  const resp = await fetch('/logs/full');
+  const text = await resp.text();
+  document.getElementById('fullLogs').textContent = text;
 }
 </script>
 </body>
@@ -92,10 +107,29 @@ def logs():
     return jsonify(REQUEST_LOG[-20:]), 200
 
 
+@app.route("/logs/full")
+def full_logs():
+    """
+    Endpoint to open or download the full test_results.txt file.
+    Query param: ?download=1 triggers download instead of view.
+    """
+    if not os.path.exists(LOG_FILE):
+        return "Log file not found.", 404
+
+    download = request.args.get("download")
+    if download:
+        return send_file(LOG_FILE, as_attachment=True, download_name="test_results.txt")
+
+    def generate():
+        with open(LOG_FILE, "r") as f:
+            for line in f:
+                yield line
+    return Response(generate(), mimetype="text/plain")
+
+
 @app.route("/api/secure", methods=["POST"])
 def api_secure():
     SECRET_API_KEY = os.environ.get("SECRET_API_KEY", "secret-key-123")
-
     headers = request.headers
     x_api_key = headers.get("X-Api-Key")
     x_req_id = headers.get("X-Request-Id")
