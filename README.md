@@ -55,13 +55,21 @@ Headers required:
 - `X-Request-Id`: unique request identifier
 
 Example request body:
+<<<<<<< HEAD
 json
+=======
+```json
+>>>>>>> e933e3f (logs stored in file)
 {
   "name": "Usman"
 }
 Example response:
 
 json
+<<<<<<< HEAD
+=======
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 {
   "message": "Hello, Usman!",
   "request_id": "req-123",
@@ -91,6 +99,10 @@ All logs are stored in test_results.txt in the app directory.
 Each entry is timestamped, e.g.:
 
 vbnet
+<<<<<<< HEAD
+=======
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 [2025-11-07 13:55:31] SUCCESS API call by Usman with req_id=req-8a32d2
 [2025-11-07 13:55:45] ERROR Invalid API key from 172.31.12.45
 Log entries are generated both from:
@@ -132,18 +144,34 @@ This ensures your Jenkins console output summary is stored permanently inside th
 ☁️ EC2 Deployment
 1️⃣ SSH into EC2
 bash
+<<<<<<< HEAD
 ssh -i "your-key.pem" ubuntu@<ec2-public-ip>
 2️⃣ Clone your repo
 bash
+=======
+Copy code
+ssh -i "your-key.pem" ubuntu@<ec2-public-ip>
+2️⃣ Clone your repo
+bash
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 git clone https://github.com/usmanfarooq317/jenkins-flask-app.git
 cd jenkins-flask-app
 3️⃣ Install dependencies
 bash
+<<<<<<< HEAD
+=======
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 sudo apt update
 sudo apt install python3-pip -y
 pip install -r requirements.txt
 4️⃣ Run app
 bash
+<<<<<<< HEAD
+=======
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 python3 app.py
 5️⃣ Access in browser
 http://<ec2-public-ip>:5090
@@ -156,16 +184,28 @@ Click “⬇ Download Full Log” to download test_results.txt
 
 🔹 In EC2 Terminal:
 bash
+<<<<<<< HEAD
 
+=======
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 cat test_results.txt
 or live follow logs:
 
 bash
+<<<<<<< HEAD
+=======
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 tail -f test_results.txt
 🧪 Testing
 Open your browser:
 
 cpp
+<<<<<<< HEAD
+=======
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 http://<ec2-public-ip>:5090
 Enter:
 
@@ -183,6 +223,10 @@ Check “Response” panel and verify entry in test_results.txt
 API Response
 
 json
+<<<<<<< HEAD
+=======
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 HTTP 200
 {
   "message": "Hello, Usman!",
@@ -192,14 +236,30 @@ HTTP 200
 Log Entry
 
 csharp
+<<<<<<< HEAD
 [2025-11-07 13:55:31] SUCCESS API call by Usman with req_id=req-8a32d2
 📦 Download Full Logs (direct link)
 pgsql
 http://<ec2-public-ip>:5090/logs/full?download=1
 🧰 Run via Docker (optional)
 bash
+=======
+Copy code
+[2025-11-07 13:55:31] SUCCESS API call by Usman with req_id=req-8a32d2
+📦 Download Full Logs (direct link)
+pgsql
+Copy code
+http://<ec2-public-ip>:5090/logs/full?download=1
+🧰 Run via Docker (optional)
+bash
+Copy code
+>>>>>>> e933e3f (logs stored in file)
 docker build -t jenkins-flask-app .
 docker run -d -p 5090:5090 jenkins-flask-app
 Then access:
 
+<<<<<<< HEAD
 http://localhost:5090
+=======
+http://localhost:5090
+>>>>>>> e933e3f (logs stored in file)

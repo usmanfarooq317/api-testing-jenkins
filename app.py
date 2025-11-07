@@ -8,26 +8,32 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-LOG_FILE = "logs/api-test-results.json"
-os.makedirs("logs", exist_ok=True)
+# -------------------- Log File Setup -------------------- #
+LOG_DIR = "logs"
+LOG_FILE = os.path.join(LOG_DIR, "api-test-results.json")
+os.makedirs(LOG_DIR, exist_ok=True)
 
-# -------------------- Helper: Write Logs -------------------- #
+# Ensure the log file exists
+if not os.path.exists(LOG_FILE):
+    with open(LOG_FILE, "w") as f:
+        json.dump([], f, indent=2)
+
+
+# -------------------- Helper Function -------------------- #
 def write_log(entry: dict):
     """Append structured log entries into logs/api-test-results.json"""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    entry["timestamp"] = timestamp
+    entry["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Read existing logs
-    logs = []
-    if os.path.exists(LOG_FILE):
-        try:
-            with open(LOG_FILE, "r") as f:
-                logs = json.load(f)
-        except json.JSONDecodeError:
-            logs = []
+    try:
+        with open(LOG_FILE, "r") as f:
+            logs = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        logs = []
 
     logs.append(entry)
 
+    # Write updated logs
     with open(LOG_FILE, "w") as f:
         json.dump(logs, f, indent=2)
 
@@ -108,6 +114,7 @@ async function showLogs() {
 </html>
 """.replace("{{rid}}", str(uuid.uuid4())[:8])
 
+
 # -------------------- Routes -------------------- #
 
 @app.route("/")
@@ -140,7 +147,7 @@ def api_secure():
         "endpoint": "/api/secure"
     }
 
-    # Validation
+    # Header validation
     if not x_api_key:
         record["result"] = "❌ Missing X-Api-Key"
         write_log(record)
@@ -187,7 +194,6 @@ def full_logs():
     if request.args.get("download"):
         return send_file(LOG_FILE, as_attachment=True, download_name="api-test-results.json")
 
-    # Show raw JSON pretty-printed text
     with open(LOG_FILE, "r") as f:
         content = f.read()
     return Response(content, mimetype="text/plain")
