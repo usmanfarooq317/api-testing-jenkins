@@ -18,23 +18,30 @@ pipeline {
         }
 
         stage('Generate Version Tag') {
-            steps {
-                script {
-                    // try to fetch existing tags from Docker Hub; fallback to v1
-                    def existingTags = sh(
-                        script: "set -o pipefail; curl -s https://hub.docker.com/v2/repositories/${DOCKER_USER}/${IMAGE_NAME}/tags/?page_size=100 | jq -r '.results[].name' | grep -E '^v[0-9]+' || true",
-                        returnStdout: true
-                    ).trim()
-                    if (!existingTags) {
-                        env.NEW_VERSION = "v1"
-                    } else {
-                        def numbers = existingTags.readLines().collect { it.replace('v', '').toInteger() }
-                        env.NEW_VERSION = "v" + (numbers.max() + 1)
-                    }
-                    echo "✅ New Version to build: ${env.NEW_VERSION}"
-                }
+    steps {
+        script {
+            // try to fetch existing tags from Docker Hub; fallback to v1
+            def existingTags = sh(
+                script: """#!/bin/bash
+set -eo pipefail
+curl -s https://hub.docker.com/v2/repositories/${DOCKER_USER}/${IMAGE_NAME}/tags/?page_size=100 \
+| jq -r '.results[].name' | grep -E '^v[0-9]+' || true
+""",
+                returnStdout: true
+            ).trim()
+
+            if (!existingTags) {
+                env.NEW_VERSION = "v1"
+            } else {
+                def numbers = existingTags.readLines().collect { it.replace('v', '').toInteger() }
+                env.NEW_VERSION = "v" + (numbers.max() + 1)
             }
+
+            echo "✅ New Version to build: ${env.NEW_VERSION}"
         }
+    }
+}
+
 
         stage('Build Docker Image') {
             steps {
