@@ -103,7 +103,7 @@ curl -s https://hub.docker.com/v2/repositories/${DOCKER_USER}/${IMAGE_NAME}/tags
                         sshagent(['usman-ec2-key']) {
                             // change to your EC2 user@host if required in Jenkins credentials or parametrized
                             sh """
-                              ssh -o StrictHostKeyChecking=no ubuntu@YOUR.EC2.IP.ADDRESS '
+                              ssh -o StrictHostKeyChecking=no ubuntu@13.50.238.43 '
                                 docker pull ${DOCKER_USER}/${IMAGE_NAME}:${env.NEW_VERSION} &&
                                 docker stop ${IMAGE_NAME}-service || true &&
                                 docker rm ${IMAGE_NAME}-service || true &&
