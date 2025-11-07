@@ -210,7 +210,7 @@ def frontend_log():
 
     entry["source"] = "frontend-event"
     write_log(entry)
-    return jsonify({"message": "Frontend log added", "entry": entry})
+    return jsonify({"message": "Frontend logs added", "entry": entry})
 
 
 # -------------------- Main -------------------- #
